@@ -62,7 +62,11 @@ class TestCreateTask:
         assert "id" in data
 
     def test_create_task_with_all_fields(self, client):
-        payload = {"title": "Deploy app", "description": "Push to production", "status": "in_progress"}
+        payload = {
+            "title": "Deploy app",
+            "description": "Push to production",
+            "status": "in_progress",
+        }
         response = client.post("/tasks", data=json.dumps(payload), content_type="application/json")
         assert response.status_code == 201
         data = json.loads(response.data)
