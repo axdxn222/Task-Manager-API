@@ -78,6 +78,23 @@ def create_app():
         return jsonify({"tasks": result, "count": len(result)}), 200
 
     # ========================================================
+    # ROUTE — Search tasks  (GET /tasks/search)
+    # ========================================================
+    @app.route("/tasks/search", methods=["GET"])
+    def search_tasks():
+        query = request.args.get("q", "").strip().lower()
+
+        if not query:
+            return jsonify({"error": "Search query 'q' is required"}), 400
+
+        results = []
+        for task in tasks.values():
+            if query in task["title"].lower() or query in task["description"].lower():
+                results.append(task)
+
+        return jsonify({"tasks": results, "count": len(results), "query": query}), 200
+
+    # ========================================================
     # ROUTE 3 — Get a single task  (GET /tasks/<id>)
     # ========================================================
     # Path parameters let you identify a specific resource.
