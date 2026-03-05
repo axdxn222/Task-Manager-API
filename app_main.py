@@ -22,6 +22,7 @@ def create_app():
     # In production you'd use a real database (PostgreSQL, MongoDB, etc.)
     # We keep it simple so you can focus on the API concepts.
     tasks = {}
+    VALID_PRIORITIES = ["low", "medium", "high"]
 
     # ========================================================
     # ROUTE 1 — Health check
@@ -39,12 +40,17 @@ def create_app():
     # We return 200 OK with the full list.
     @app.route("/tasks", methods=["GET"])
     def get_tasks():
-        # Optional query-parameter filtering
-        status_filter = request.args.get("status")  # e.g. /tasks?status=done
+        status_filter = request.args.get("status")
+        priority_filter = request.args.get("priority")
+
+        result = list(tasks.values())
+
         if status_filter:
-            filtered = {k: v for k, v in tasks.items() if v["status"] == status_filter}
-            return jsonify({"tasks": list(filtered.values()), "count": len(filtered)}), 200
-        return jsonify({"tasks": list(tasks.values()), "count": len(tasks)}), 200
+            result = [t for t in result if t["status"] == status_filter]
+        if priority_filter:
+            result = [t for t in result if t["priority"] == priority_filter]
+
+        return jsonify({"tasks": result, "count": len(result)}), 200
 
     # ========================================================
     # ROUTE 3 — Get a single task  (GET /tasks/<id>)
@@ -73,6 +79,9 @@ def create_app():
         if not isinstance(data["title"], str) or len(data["title"].strip()) == 0:
             return jsonify({"error": "Title must be a non-empty string"}), 400
 
+        if "priority" in data and data["priority"] not in VALID_PRIORITIES:
+            return jsonify({"error": f"Priority must be one of: {VALID_PRIORITIES}"}), 400
+
         task_id = str(uuid.uuid4())
         task = {
             "id": task_id,
@@ -81,6 +90,7 @@ def create_app():
             "status": data.get("status", "todo"),
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat(),
+            "priority": data.get("priority", "medium"),
         }
         tasks[task_id] = task
         return jsonify(task), 201
@@ -103,6 +113,9 @@ def create_app():
         if "status" in data and data["status"] not in VALID_STATUSES:
             return jsonify({"error": f"Status must be one of: {VALID_STATUSES}"}), 400
 
+        if "priority" in data and data["priority"] not in VALID_PRIORITIES:
+            return jsonify({"error": f"Priority must be one of: {VALID_PRIORITIES}"}), 400
+
         # Only update fields that were sent
         if "title" in data:
             task["title"] = data["title"]
@@ -110,6 +123,8 @@ def create_app():
             task["description"] = data["description"]
         if "status" in data:
             task["status"] = data["status"]
+        if "priority" in data:
+            task["priority"] = data["priority"]
         task["updated_at"] = datetime.utcnow().isoformat()
 
         return jsonify(task), 200
