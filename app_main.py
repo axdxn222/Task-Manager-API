@@ -50,6 +50,31 @@ def create_app():
         if priority_filter:
             result = [t for t in result if t["priority"] == priority_filter]
 
+        # Pagination
+        page = request.args.get("page", type=int)
+        per_page = request.args.get("per_page", default=10, type=int)
+
+        if page:
+            total_items = len(result)
+            total_pages = max(1, -(-total_items // per_page))
+            start = (page - 1) * per_page
+            end = start + per_page
+            result = result[start:end]
+
+            return (
+                jsonify(
+                    {
+                        "tasks": result,
+                        "count": len(result),
+                        "page": page,
+                        "per_page": per_page,
+                        "total_items": total_items,
+                        "total_pages": total_pages,
+                    }
+                ),
+                200,
+            )
+
         return jsonify({"tasks": result, "count": len(result)}), 200
 
     # ========================================================
